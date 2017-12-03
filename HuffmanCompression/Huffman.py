@@ -4,12 +4,12 @@ from collections import Counter
 
 class _Node:
     """
-    node_type: junction or normal
+    node_type: junction or leaf
     left: left child
     right: right child
     """
 
-    def __init__(self, value=None, count=0, left=None, right=None, node_type='normal'):
+    def __init__(self, value=None, count=0, left=None, right=None, node_type='leaf'):
         self.right = right
         self.left = left
         self.node_type = node_type
@@ -51,7 +51,7 @@ class HuffmanTree:
                         current_node.right = _Node(node_type='junction')
                     current_node = current_node.right
             current_node.code = code
-            current_node.node_type = 'normal'
+            current_node.node_type = 'leaf'
             current_node.value = value
         return cls(root, calculate_codes=False)
 
@@ -75,7 +75,7 @@ class HuffmanTree:
             for node in HuffmanTree._elements_iterator(current_node.left, get_junctions):
                 yield node
 
-            if get_junctions or current_node.node_type == 'normal':
+            if get_junctions or current_node.node_type == 'leaf':
                 yield current_node
 
             for node in HuffmanTree._elements_iterator(current_node.right, get_junctions):
@@ -88,7 +88,7 @@ class HuffmanTree:
     def _calculate_codes(root=None, current_code=""):
         if root is None:
             return
-        if root.node_type == 'normal':
+        if root.node_type == 'leaf':
             root.code = current_code
             return
         HuffmanTree._calculate_codes(root.left, current_code=current_code + '0')
@@ -111,8 +111,9 @@ class HuffmanTree:
         return str(list(self.elements(get_junctions=True)))
 
 
-def bytes_from_file(filename, chunksize=8192):
-    with open(filename, "rb") as file:
+def read_from_file(filename, chunksize=8192, mode="rb", start=0):
+    with open(filename, mode) as file:
+        file.seek(start)
         while True:
             chunk = file.read(chunksize)
             if chunk:
@@ -130,11 +131,11 @@ def write_header(filename, huff_tree):
             file.write(node.code)
             if i < num - 1:
                 file.write('.')
-        file.write('_.')
+        file.write('_.')  # terminate header with _. this can't occur in actual header
 
 
 def packed_bits(filename, code_dict):
-    file_content = [b for b in bytes_from_file(filename)]
+    file_content = [b for b in read_from_file(filename, mode="rb")]
     file_codes = [code_dict[val] for val in file_content]
     current = 0
     idx = 7
@@ -153,56 +154,59 @@ def to_byte_str(num):
     return '{:08b}'.format(num)
 
 
-def dict_from_header(filename="", chunksize=512):
+def append_comp_suffix(filename):
+    return '{}.comp'.format(filename)
+
+
+def dict_from_header(filename=""):
     code_dict = {}
     idx = 0
-    with open('{}.comp'.format(filename), "rb") as inp:
-        done = False
-        while not done:
-            chunk = inp.read(chunksize)
-            if chunk:
-                prev = None
+    prev = None
+    key = None
+    code = ''
+
+    for c in read_from_file(append_comp_suffix(filename), mode="rb"):
+        idx += 1
+        if c >= 128:  # if c is not in ascii range we fetched beyond header
+            return idx, code_dict
+        c = chr(c)
+        if c == '.' and prev != '.':  # .. means separator followed by code of character '.'
+            if key:
+                code_dict[key] = code
                 key = None
                 code = ''
-                for c in chunk:
-                    idx += 1
-                    if c >= 128:
-                        return idx, code_dict
-                    c = chr(c)
-                    if c == '.' and prev != '.':
-                        if key:
-                            code_dict[key] = code
-                            key = None
-                            code = ''
-                        if prev == '_':
-                            done = True
-                            break
-
-                    elif key is None:
-                        key = c
-                    elif c in ['0', '1']:
-                        code += c
-                    prev = c
-
-            else:
+            if prev == '_':
                 break
+
+        elif key is None:
+            key = c
+        elif c in ['0', '1']:
+            code += c
+        prev = c
 
     return idx, code_dict
 
 
 def compress(filename=""):
-    byte_freq = Counter(bytes_from_file(filename))
+    file_content = [b for b in read_from_file(filename, mode="rb")]
+    byte_freq = Counter(file_content)
 
     huff_tree = HuffmanTree.from_frequencies(byte_freq)
 
     encoded_file = bytes([x for x in packed_bits(filename, huff_tree.codes)])
-    ss = [to_byte_str(x) for x in packed_bits(filename, huff_tree.codes)]
-    print(sorted([x for x in huff_tree.codes.values()], key=len))
-    print(' '.join(ss))
-    print(dict([(chr(a), b) for (a, b) in huff_tree.codes.items()]))
+    # debug
+    # ss = [to_byte_str(x) for x in packed_bits(filename, huff_tree.codes)]
+    # print(sorted([x for x in huff_tree.codes.values()], key=len))
+    # print(' '.join(ss))
+    # print(dict([(chr(a), b) for (a, b) in huff_tree.codes.items()]))
+    # debug
     write_header(filename, huff_tree)
     with open('{}.comp'.format(filename), "ab") as out:
         out.write(encoded_file)
+
+    compression_ratio = len(encoded_file)/len(file_content)
+
+    return compression_ratio, huff_tree.codes
 
 
 def decode(strn, code_dict):
@@ -211,7 +215,7 @@ def decode(strn, code_dict):
     current_node = huff_tree.root
     strn = strn + 'e'  # a hack to indicate end of line
     for i in strn:
-        if current_node.node_type == 'normal' or i == 'e':
+        if current_node.node_type == 'leaf' or i == 'e':
             result += current_node.value
             current_node = huff_tree.root
         if i == '0':
@@ -225,14 +229,10 @@ def decode(strn, code_dict):
 def decompress(filename=""):
     last, codes = dict_from_header(filename)
     print(codes)
-    file_content = ""
-    with open('{}.comp'.format(filename), "rb") as inp:
-        inp.seek(last)
-        file_content = file_content.join([to_byte_str(b) for b in inp.read(8192)])
+    file_content = "".join([to_byte_str(b) for b in read_from_file(append_comp_suffix(filename), mode="rb", start=last)])
 
-    print(file_content)
     print(decode(file_content, codes))
 
 
-compress('HuffmanCompression/test.test')
+cr,d = compress('HuffmanCompression/test.test')
 decompress('HuffmanCompression/test.test')
