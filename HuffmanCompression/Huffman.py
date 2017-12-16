@@ -236,3 +236,4 @@ def decompress(filename=""):
 
 cr,d = compress('HuffmanCompression/test.test')
 decompress('HuffmanCompression/test.test')
+print(cr)
