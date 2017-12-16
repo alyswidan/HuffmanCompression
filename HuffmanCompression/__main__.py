@@ -1,6 +1,6 @@
 from HuffmanCompression.helpers import *
 
 
-cr,d = compress('HuffmanCompression/test.test')
-decompress('HuffmanCompression/test.test')
+cr,d = compress('test.test')
+decompress('test.test')
 print(cr)

@@ -91,7 +91,7 @@ def compress(filename=""):
     # print(dict([(chr(a), b) for (a, b) in huff_tree.codes.items()]))
     # debug
     write_header(filename, huff_tree)
-    with open('{}.comp'.format(filename), "ab") as out:
+    with open(append_comp_suffix(filename), "ab") as out:
         out.write(encoded_file)
 
     compression_ratio = len(encoded_file)/len(file_content)
