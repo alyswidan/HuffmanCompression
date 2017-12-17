@@ -1,6 +1,7 @@
 from collections import Counter
 from HuffmanCompression.HuffmanTree import *
 
+
 def read_from_file(filename, chunksize=8192, mode="rb", start=0):
     with open(filename, mode) as file:
         file.seek(start)
@@ -48,6 +49,12 @@ def append_comp_suffix(filename):
     return '{}.comp'.format(filename)
 
 
+def remove_decomp_suffix(filename):
+    arr = filename.split('.')
+    return '.'.join(arr[0:len(arr)-1])
+
+
+
 def dict_from_header(filename=""):
     code_dict = {}
     idx = 0
@@ -55,7 +62,7 @@ def dict_from_header(filename=""):
     key = None
     code = ''
 
-    for c in read_from_file(append_comp_suffix(filename), mode="rb"):
+    for c in read_from_file(filename, mode="rb"):
         idx += 1
         if c >= 128:  # if c is not in ascii range we fetched beyond header
             return idx, code_dict
@@ -116,9 +123,8 @@ def decode(strn, code_dict):
     return result
 
 
-def decompress(filename=""):
+def decompress(filename="",destination="."):
     last, codes = dict_from_header(filename)
-    print(codes)
-    file_content = "".join([to_byte_str(b) for b in read_from_file(append_comp_suffix(filename), mode="rb", start=last)])
-
-    print(decode(file_content, codes))
+    file_content = "".join([to_byte_str(b) for b in read_from_file(filename, mode="rb", start=last)])
+    with open('{0}/{1}.decomp'.format(destination,remove_decomp_suffix(filename)) , 'wb+') as file:
+        file.write(bytes([ord(x) for x in decode(file_content, codes)]))
