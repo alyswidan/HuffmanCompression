@@ -54,7 +54,6 @@ def remove_decomp_suffix(filename):
     return '.'.join(arr[0:len(arr)-1])
 
 
-
 def dict_from_header(filename=""):
     code_dict = {}
     idx = 0
@@ -126,5 +125,5 @@ def decode(strn, code_dict):
 def decompress(filename="",destination="."):
     last, codes = dict_from_header(filename)
     file_content = "".join([to_byte_str(b) for b in read_from_file(filename, mode="rb", start=last)])
-    with open('{0}/{1}.decomp'.format(destination,remove_decomp_suffix(filename)) , 'wb+') as file:
+    with open('{0}/{1}.decomp'.format(destination,remove_decomp_suffix(filename)), 'wb+') as file:
         file.write(bytes([ord(x) for x in decode(file_content, codes)]))
