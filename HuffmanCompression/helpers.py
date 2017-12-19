@@ -157,12 +157,36 @@ def clone_dir(src):
     but with the root having the original name (.comp)
 
     """
+    parent = src.split('/')[-2]
     dir_name = src.split('/')[-1]
 
-    def get_compressed_file_path(): return '{0}/{1}.comp'.format(src, dir_name)
+    def compressed_file_path(): return '{0}/{1}.comp'.format(parent, dir_name)
 
-    os.makedirs(get_compressed_file_path())
-    dir_util.copy_tree(src, get_compressed_file_path())
+    os.makedirs(compressed_file_path())
+    dir_util.copy_tree(src, compressed_file_path())
+    return compressed_file_path()
+
+
+def compress_dir(dir_name):
+    compressed_dir_name = clone_dir(dir_name)
+    compress_recursively(compressed_dir_name)
+
+
+def compress_recursively(dir_name):
+    directory = os.fsencode(dir_name)
+    print('exploring: ',dir_name)
+    print(os.path.lexists(directory))
+    for file in os.listdir(directory):
+        filename = os.fsdecode(file)
+        filepath = os.path.join(dir_name,filename)
+        print('current file: ',filepath)
+        if os.path.isdir(os.fsencode(filepath)):
+            print('file is a dir')
+            compress_recursively(filepath)
+        elif os.path.isfile(filepath):
+            print('file is a normal file')
+            compress(filepath)
+            os.remove(filepath)
 
 
 def decompress(filename="", destination="."):
