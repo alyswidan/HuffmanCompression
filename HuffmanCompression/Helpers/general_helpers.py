@@ -41,8 +41,12 @@ def clone_dir(src,compressed_dir_path):
     os.makedirs(compressed_dir_path)
     dir_util.copy_tree(src, compressed_dir_path)
 
+
 def walk_dir(root_str,action_at_leaf):
     """
+    A helper used by directory compression and decompression functions to
+    walk the directory tree and execute the compression and decompression
+    functions respectively on files within the directory tree
 
     :param root_str: the path to the root of the directory
     :param action_at_leaf: a function to be executed at every file

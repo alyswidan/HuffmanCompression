@@ -24,25 +24,27 @@ def compress(file_path=""):
 
 def compress_dir(dir_path):
 
+    """
+    This compresses the directory by first cloning the directory tree of the original directory
+    it then recursively compresses each file in the tree and then removes the original file
+    resulting in a directory tree equivalent to the original one but with each file replaced
+    by its compressed version.
+
+    :param dir_path: path to the directory to be compressed
+    :return:
+    """
+    def compress_and_remove(file_path):
+        """
+        compress the file then remove it
+        :param file_path: path to the file to be compressed within the directory tree
+        :return:
+        """
+        compress(file_path)
+        os.remove(file_path)
+
     dir_name = dir_path.split('/')[-1]
-    compressed_dir_path = os.path.join(get_parent_dir(dir_path),dir_name) + '.comp'
+    compressed_dir_path = os.path.join(get_parent_dir(dir_path), dir_name) + '.comp'
     clone_dir(dir_path, compressed_dir_path)
-    _compress_recursively(compressed_dir_path)
+    walk_dir(compressed_dir_path,compress_and_remove)
 
 
-def _compress_recursively(dir_path):
-
-    directory = os.fsencode(dir_path)
-    print('exploring: ',dir_path)
-
-    for file in os.listdir(directory):
-        filename = os.fsdecode(file)
-        file_path = os.path.join(dir_path,filename)
-        print('current file: ',file_path)
-        if os.path.isdir(os.fsencode(file_path)):
-            print('file is a dir')
-            _compress_recursively(file_path)
-        elif os.path.isfile(file_path):
-            print('file is a normal file')
-            compress(file_path)
-            os.remove(file_path)
