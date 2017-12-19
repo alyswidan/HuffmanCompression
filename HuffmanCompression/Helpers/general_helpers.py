@@ -1,6 +1,9 @@
 from distutils import dir_util
 import os
 
+# TODO: create a utility to be used when creating files or directories allowing multilpe files of the same copy to
+# exist but with a number suffix https://stackoverflow.com/questions/17984809/how-do-i-create-a-incrementing-filename
+# -in-python
 
 def read_from_file(filename, chunksize=8192, mode="rb", start=0):
     with open(filename, mode) as file:
