@@ -25,4 +25,4 @@ elif sys.argv[1] == 'all':
         if i not in header_dict.keys():
             print('codes[{0}] = {1} not found'.format(i,code_dict[i]))
 else:
-    print('illegal option ', sys.argv[2])
+    print('illegal option ', sys.argv[1])
