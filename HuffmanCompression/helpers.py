@@ -63,13 +63,14 @@ def to_byte_str(num):
     return '{:08b}'.format(num)
 
 
+
 def append_comp_suffix(filename):
     return '{}.comp'.format(filename)
 
 
-def remove_decomp_suffix(filename):
-    arr = filename.split('.')
-    return '.'.join(arr[0:len(arr) - 1])
+def remove_comp_suffix(filename):
+    split_name = filename.split('.')
+    return '.'.join(split_name[:-1])
 
 
 def dict_from_header(filename=""):
@@ -104,16 +105,16 @@ def dict_from_header(filename=""):
     return idx, code_dict
 
 
-def compress(filename=""):
-    file_content = [b for b in read_from_file(filename, mode="rb")]
+def compress(file_path=""):
+    file_content = [b for b in read_from_file(file_path, mode="rb")]
     byte_freq = Counter(file_content)
 
     huff_tree = HuffmanTree.from_frequencies(byte_freq)
-    before = [x for x in pack_bits(filename, huff_tree.codes)]
+    before = [x for x in pack_bits(file_path, huff_tree.codes)]
     encoded_file = bytes(before)
 
-    write_header(filename, huff_tree)
-    with open(append_comp_suffix(filename), "ab") as out:
+    write_header(file_path, huff_tree)
+    with open(append_comp_suffix(file_path), "ab") as out:
         out.write(encoded_file)
 
     compression_ratio = len(encoded_file) / len(file_content)
@@ -147,7 +148,11 @@ def decode(strn, code_dict):
     return result
 
 
-def clone_dir(src):
+def get_parent_dir(dir_path):
+    return dir_path.split('/')[-2]
+
+
+def clone_dir(src,compressed_dir_path):
 
     """
 
@@ -157,42 +162,70 @@ def clone_dir(src):
     but with the root having the original name (.comp)
 
     """
-    parent = src.split('/')[-2]
-    dir_name = src.split('/')[-1]
-
-    def compressed_file_path(): return '{0}/{1}.comp'.format(parent, dir_name)
-
-    os.makedirs(compressed_file_path())
-    dir_util.copy_tree(src, compressed_file_path())
-    return compressed_file_path()
+    os.makedirs(compressed_dir_path)
+    dir_util.copy_tree(src, compressed_dir_path)
 
 
-def compress_dir(dir_name):
-    compressed_dir_name = clone_dir(dir_name)
-    compress_recursively(compressed_dir_name)
+def compress_dir(dir_path):
+
+    dir_name = dir_path.split('/')[-1]
+    compressed_dir_path = '{0}/{1}.comp'.format(get_parent_dir(dir_path),dir_name)
+
+    clone_dir(dir_path, compressed_dir_path)
+    compress_recursively(compressed_dir_path)
 
 
-def compress_recursively(dir_name):
-    directory = os.fsencode(dir_name)
-    print('exploring: ',dir_name)
-    print(os.path.lexists(directory))
+def compress_recursively(dir_path):
+
+    directory = os.fsencode(dir_path)
+    print('exploring: ',dir_path)
+
     for file in os.listdir(directory):
         filename = os.fsdecode(file)
-        filepath = os.path.join(dir_name,filename)
-        print('current file: ',filepath)
-        if os.path.isdir(os.fsencode(filepath)):
+        file_path = os.path.join(dir_path,filename)
+        print('current file: ',file_path)
+        if os.path.isdir(os.fsencode(file_path)):
             print('file is a dir')
-            compress_recursively(filepath)
-        elif os.path.isfile(filepath):
+            compress_recursively(file_path)
+        elif os.path.isfile(file_path):
             print('file is a normal file')
-            compress(filepath)
-            os.remove(filepath)
+            compress(file_path)
+            os.remove(file_path)
 
 
-def decompress(filename="", destination="."):
-    last, codes = dict_from_header(filename)
+def decompress_dir(dir_path):
 
-    file_content = "".join([to_byte_str(b) for b in read_from_file(filename, mode="rb", start=last)])
-    with open('{0}/{1}.decomp'.format(destination, remove_decomp_suffix(filename)), 'wb+') as file:
+    # split on / and get the last element
+    # then split the last element on . and get all but the last word ie. .comp
+    # join the resulting array using . again to obtain dir name without .comp
+    dir_name = '.'.join(dir_path.split('/')[-1].split('.')[:-1])
+    decompressed_dir_path = '{0}/{1}'.format(get_parent_dir(dir_path), dir_name)
+
+    clone_dir(dir_path, decompressed_dir_path)
+    decompress_recursively(decompressed_dir_path)
+
+
+def decompress_recursively(dir_path):
+    directory = os.fsencode(dir_path)
+    print('exploring: ', dir_path)
+
+    for file in os.listdir(directory):
+        filename = os.fsdecode(file)
+        file_path = os.path.join(dir_path,filename)
+        print('current file: ',file_path)
+        if os.path.isdir(os.fsencode(file_path)):
+            print('file is a dir')
+            compress_recursively(file_path)
+        elif os.path.isfile(file_path):
+            print('file is a normal file in dir ',dir_path,filename)
+            decompress(file_path)
+            os.remove(file_path)
+
+
+def decompress(file_path=""):
+    last, codes = dict_from_header(file_path)
+
+    file_content = "".join([to_byte_str(b) for b in read_from_file(file_path, mode="rb", start=last)])
+    with open(remove_comp_suffix(file_path), 'wb+') as file:
         file.write(bytes([ord(x) for x in decode(file_content, codes)]))
     return codes

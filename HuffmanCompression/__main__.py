@@ -17,7 +17,10 @@ if sys.argv[1] == 'compress':
         print('codes = ', code_dict)
 
 elif sys.argv[1] == 'decompress':
-    decompress(sys.argv[2])
+    if os.path.isdir(sys.argv[2]):
+        decompress_dir(sys.argv[2])
+    else:
+        decompress(sys.argv[2])
 elif sys.argv[1] == 'all':
     compression_ratio, code_dict = compress(sys.argv[2])
     print('done compressing')
