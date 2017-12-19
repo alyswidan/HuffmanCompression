@@ -1,7 +1,7 @@
-from HuffmanCompression.helpers import *
 import sys
 import time
-
+from HuffmanCompression.compression import *
+from HuffmanCompression.decompression import *
 if len(sys.argv) != 3:
     print('illegal usage: use as HuffmanCompression [compress|decompress] filename')
     exit(1)

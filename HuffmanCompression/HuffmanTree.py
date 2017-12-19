@@ -1,5 +1,7 @@
 import heapq
 from HuffmanCompression.Node import *
+
+
 class HuffmanTree:
     def __init__(self, root=None, calculate_codes=True):
         self.root = root
