@@ -1,5 +1,5 @@
+from HuffmanCompression.DataStructures.HuffmanTree import HuffmanTree
 from HuffmanCompression.Helpers.general_helpers import read_from_file
-from HuffmanCompression.HuffmanTree import HuffmanTree
 
 
 def decode(strn, code_dict):

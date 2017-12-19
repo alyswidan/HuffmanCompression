@@ -1,5 +1,6 @@
 import heapq
-from HuffmanCompression.Node import *
+
+from HuffmanCompression.DataStructures.Node import *
 
 
 class HuffmanTree:

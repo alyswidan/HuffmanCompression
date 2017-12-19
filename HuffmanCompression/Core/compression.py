@@ -1,8 +1,8 @@
 from collections import Counter
 
+from HuffmanCompression.DataStructures.HuffmanTree import HuffmanTree
 from HuffmanCompression.Helpers.compression_helpers import *
 from HuffmanCompression.Helpers.general_helpers import *
-from HuffmanCompression.HuffmanTree import HuffmanTree
 
 
 def compress(file_path=""):
